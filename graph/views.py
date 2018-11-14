@@ -20,6 +20,7 @@ l4=[]
 l5=[]
 l6=[]
 l7=[]
+sdt=[]
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -28,10 +29,12 @@ def daterange(date1, date2):
         yield date1 + timedelta(n)
 
 def dash_view(request):
-    global l,m,n
+    global l,m,n,sdt,p
     l=[]
     m=[]
     n=[]
+    sdt=[]
+    p=[]
     error = False
     file = os.path.join(os.path.join(BASE_DIR, "graph"),'Top_lanes.csv')
     file1 = os.path.join(os.path.join(BASE_DIR, "graph"),'FMC_data_1.csv')
@@ -85,6 +88,17 @@ def dash_view(request):
             if i[4]==i[8] and i[9]=='AM':
                 i[8]='----'
                 i[9]='----'
+            else:
+                if i[9]=='PM':
+                    x=i[8].split(':')
+                    y = int(x[0])
+                    y+=12
+                    x[0]=str(y)
+                    x[1]='00'
+                    x.pop()
+                    y = ':'.join(x)+' '+i[7]
+                    sdt.append(y)
+                    p.append(i[5])
             n2.append([i[0],i[1],i[4],i[5],i[7],i[8],i[9]])
         svl=[i for i in filtered if i[2]=='01:00 PDT']
         if n2:
@@ -105,17 +119,15 @@ def dash_view(request):
             xuv=n2[0][2]
         else:
             xuv=0
-        for i in n2:
-            x = i[-2].split(':')
-            if n2[-1]=='PM':
-                if int(x[1]):
-                    x[0]=int(x[0])+1
-                x1 = int(x[0])+12
-                x[0]=x1
-            x.pop()
-            i[-2] = ':'.join(x)
-            if i[-3]==d:
-                p.append(i[-2])
+        t = 0
+        for i in l:
+            for j in sdt:
+                if i==j:
+                    p2.append(p[t])
+                    t+=1
+                else:
+                    p2.append(0)
+
         context={'c':c,'d':d,'d1':d1,'cpt':n2,'sum':sum1,'fv':fv,'sv':sv,'cpt1':xuv,'row':row}
         return render(request,"dash.html",context)
     else:
@@ -158,7 +170,7 @@ class ChartData(APIView):
 
 
     def get(self, request, format=None):
-        usernames =(l,m,n,p)
+        usernames =(l,m,n,sdt,p2)
         return Response(usernames)
 class ChartData1(APIView):
     authentication_classes = []
